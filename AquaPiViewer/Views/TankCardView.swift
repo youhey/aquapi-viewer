@@ -12,6 +12,7 @@ struct TankCardView: View {
     @ObservedObject var livestockStore: LivestockStore
     @State private var imageErrorMessage: String?
     @State private var selectedCropImage: SelectedCropImage?
+    @State private var isLivestockPreviewPresented = false
     @State private var isLivestockSheetPresented = false
 
     var body: some View {
@@ -119,19 +120,31 @@ struct TankCardView: View {
 
     private var livestockSummaryButton: some View {
         Button {
-            isLivestockSheetPresented = true
+            isLivestockPreviewPresented = true
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "list.bullet.rectangle")
                 Text(livestockSummary.displayText)
                     .lineLimit(1)
                 Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
             }
             .font(.subheadline.weight(.medium))
             .foregroundStyle(livestockSummary.speciesCount == 0 ? .secondary : .primary)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .help("生体一覧を表示")
+        .popover(isPresented: $isLivestockPreviewPresented, arrowEdge: .trailing) {
+            LivestockPreviewPopoverView(
+                tankName: sensor.name,
+                items: livestockStore.items(for: sensor.sensorID),
+                summary: livestockSummary,
+                onEdit: openLivestockEditorFromPopover
+            )
+        }
     }
 
     private var sensorSummary: some View {
@@ -245,6 +258,13 @@ struct TankCardView: View {
         } catch {
             imageErrorMessage = error.localizedDescription
             selectedCropImage = nil
+        }
+    }
+
+    private func openLivestockEditorFromPopover() {
+        isLivestockPreviewPresented = false
+        DispatchQueue.main.async {
+            isLivestockSheetPresented = true
         }
     }
 
