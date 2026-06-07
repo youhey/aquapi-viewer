@@ -19,11 +19,7 @@ struct MiniTemperatureChartView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("24h")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
+        Group {
             if let errorMessage {
                 placeholder("24h data unavailable", systemImage: "waveform.path.ecg")
                     .help(errorMessage)
@@ -33,7 +29,7 @@ struct MiniTemperatureChartView: View {
                 chart
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 58, maxHeight: 58, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40, alignment: .leading)
     }
 
     private var chart: some View {
@@ -83,7 +79,7 @@ struct MiniTemperatureChartView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
         .padding(.horizontal, 10)
-        .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
         .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
     }
 

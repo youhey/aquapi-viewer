@@ -49,7 +49,7 @@ struct TankCardView: View {
             }
         }
         .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 404, maxHeight: 404, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 366, maxHeight: 366, alignment: .topLeading)
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
@@ -189,9 +189,9 @@ struct TankCardView: View {
     private var rangeText: String {
         switch (sensor.min, sensor.max) {
         case let (min?, max?):
-            return String(format: "Range %.1f - %.1f℃", min, max)
+            return String(format: "Safety range %.1f - %.1f℃", min, max)
         case (_, _):
-            return "Range unavailable"
+            return "Safety range unavailable"
         }
     }
 
