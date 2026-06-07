@@ -42,6 +42,8 @@ struct AquariumIndexView: View {
                                 TankCardView(
                                     sensor: sensor,
                                     lastUpdated: viewModel.lastUpdated,
+                                    temperatureSeries: viewModel.temperatureSeriesBySensorId[sensor.sensorID],
+                                    temperatureSeriesErrorMessage: viewModel.temperatureSeriesErrorsBySensorId[sensor.sensorID],
                                     imageStore: imageStore,
                                     livestockStore: livestockStore
                                 )

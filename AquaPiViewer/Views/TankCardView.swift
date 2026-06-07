@@ -5,6 +5,8 @@ import UniformTypeIdentifiers
 struct TankCardView: View {
     let sensor: AquaReading
     let lastUpdated: Date?
+    let temperatureSeries: TemperatureSeriesResponse?
+    let temperatureSeriesErrorMessage: String?
 
     @ObservedObject var imageStore: TankImageStore
     @ObservedObject var livestockStore: LivestockStore
@@ -19,6 +21,13 @@ struct TankCardView: View {
             sensorSummary
 
             livestockSummaryButton
+
+            MiniTemperatureChartView(
+                points: temperatureSeries?.points ?? [],
+                minC: sensor.min,
+                maxC: sensor.max,
+                errorMessage: temperatureSeriesErrorMessage
+            )
 
             Text(rangeText)
                 .font(.subheadline)
@@ -40,7 +49,7 @@ struct TankCardView: View {
             }
         }
         .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 340, maxHeight: 340, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 404, maxHeight: 404, alignment: .topLeading)
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
@@ -272,6 +281,18 @@ private struct SelectedCropImage: Identifiable {
             error: nil
         ),
         lastUpdated: Date(),
+        temperatureSeries: TemperatureSeriesResponse(
+            sensorId: "28-00000020f5ed",
+            name: "増田川水槽",
+            range: "24h",
+            points: [
+                TemperatureSeriesPoint(ts: Date().addingTimeInterval(-3600 * 3), temperatureC: 22.8, rawTemperatureC: 22.8, status: "ok", crcOk: true),
+                TemperatureSeriesPoint(ts: Date().addingTimeInterval(-3600 * 2), temperatureC: 23.1, rawTemperatureC: 23.1, status: "ok", crcOk: true),
+                TemperatureSeriesPoint(ts: Date().addingTimeInterval(-3600), temperatureC: 22.9, rawTemperatureC: 22.9, status: "ok", crcOk: true),
+                TemperatureSeriesPoint(ts: Date(), temperatureC: 23.4, rawTemperatureC: 23.4, status: "ok", crcOk: true)
+            ]
+        ),
+        temperatureSeriesErrorMessage: nil,
         imageStore: TankImageStore(),
         livestockStore: LivestockStore()
     )
