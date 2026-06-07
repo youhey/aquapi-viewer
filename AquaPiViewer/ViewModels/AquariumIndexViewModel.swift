@@ -14,8 +14,10 @@ final class AquariumIndexViewModel: ObservableObject {
         self.client = client ?? AquaPiClient()
     }
 
-    var waterSensors: [AquaReading] {
-        readings.filter(\.isWaterSensor)
+    var visibleAquariumSensors: [AquaReading] {
+        readings
+            .filter(\.isAquariumVisible)
+            .sorted(by: Self.compareAquariumDisplayOrder)
     }
 
     func loadIfNeeded() async {
@@ -43,5 +45,20 @@ final class AquariumIndexViewModel: ObservableObject {
         }
 
         isLoading = false
+    }
+
+    private static func compareAquariumDisplayOrder(_ lhs: AquaReading, _ rhs: AquaReading) -> Bool {
+        let lhsSort = lhs.sortOrder ?? 1000
+        let rhsSort = rhs.sortOrder ?? 1000
+
+        if lhsSort != rhsSort {
+            return lhsSort < rhsSort
+        }
+
+        if lhs.name != rhs.name {
+            return lhs.name < rhs.name
+        }
+
+        return lhs.sensorID < rhs.sensorID
     }
 }

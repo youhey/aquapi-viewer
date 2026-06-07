@@ -21,19 +21,19 @@ struct AquariumIndexView: View {
                     Text("Aquariums")
                         .font(.title2.weight(.semibold))
 
-                    if viewModel.isLoading && viewModel.waterSensors.isEmpty {
+                    if viewModel.isLoading && viewModel.visibleAquariumSensors.isEmpty {
                         ProgressView()
                             .frame(maxWidth: .infinity, minHeight: 220)
-                    } else if viewModel.waterSensors.isEmpty {
+                    } else if viewModel.visibleAquariumSensors.isEmpty {
                         ContentUnavailableView(
-                            "No aquariums",
+                            "No visible aquarium sensors.",
                             systemImage: "drop.degreesign",
-                            description: Text("type == water のセンサーがありません。")
+                            description: Text("表示対象の水槽センサーがありません。")
                         )
                         .frame(maxWidth: .infinity, minHeight: 220)
                     } else {
                         LazyVGrid(columns: columns, spacing: 16) {
-                            ForEach(viewModel.waterSensors) { sensor in
+                            ForEach(viewModel.visibleAquariumSensors) { sensor in
                                 TankCardView(
                                     sensor: sensor,
                                     lastUpdated: viewModel.lastUpdated,
