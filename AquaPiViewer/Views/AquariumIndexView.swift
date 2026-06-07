@@ -3,6 +3,7 @@ import SwiftUI
 struct AquariumIndexView: View {
     @StateObject private var viewModel = AquariumIndexViewModel()
     @StateObject private var imageStore = TankImageStore()
+    @StateObject private var livestockStore = LivestockStore()
 
     private let columns = [
         GridItem(.adaptive(minimum: 240), spacing: 16)
@@ -15,6 +16,10 @@ struct AquariumIndexView: View {
 
                 if let errorMessage = viewModel.errorMessage {
                     errorBanner(errorMessage)
+                }
+
+                if let livestockErrorMessage = livestockStore.errorMessage {
+                    errorBanner("生体メモ: \(livestockErrorMessage)")
                 }
 
                 VStack(alignment: .leading, spacing: 16) {
@@ -37,7 +42,8 @@ struct AquariumIndexView: View {
                                 TankCardView(
                                     sensor: sensor,
                                     lastUpdated: viewModel.lastUpdated,
-                                    imageStore: imageStore
+                                    imageStore: imageStore,
+                                    livestockStore: livestockStore
                                 )
                             }
                         }
@@ -49,6 +55,7 @@ struct AquariumIndexView: View {
         .background(Color(nsColor: .windowBackgroundColor))
         .frame(minWidth: 720, minHeight: 520)
         .task {
+            livestockStore.load()
             await viewModel.loadIfNeeded()
         }
     }

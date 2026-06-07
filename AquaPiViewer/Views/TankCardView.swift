@@ -7,14 +7,18 @@ struct TankCardView: View {
     let lastUpdated: Date?
 
     @ObservedObject var imageStore: TankImageStore
+    @ObservedObject var livestockStore: LivestockStore
     @State private var imageErrorMessage: String?
     @State private var selectedCropImage: SelectedCropImage?
+    @State private var isLivestockSheetPresented = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             photoArea
 
             sensorSummary
+
+            livestockSummaryButton
 
             Text(rangeText)
                 .font(.subheadline)
@@ -36,11 +40,24 @@ struct TankCardView: View {
             }
         }
         .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 308, maxHeight: 308, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 340, maxHeight: 340, alignment: .topLeading)
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(Color.primary.opacity(0.08))
+        }
+        .sheet(isPresented: $isLivestockSheetPresented) {
+            LivestockEditorView(
+                tankName: sensor.name,
+                initialItems: livestockStore.items(for: sensor.sensorID),
+                onCancel: {
+                    isLivestockSheetPresented = false
+                },
+                onSave: { items in
+                    livestockStore.updateItems(items, for: sensor.sensorID)
+                    isLivestockSheetPresented = false
+                }
+            )
         }
         .sheet(item: $selectedCropImage) { selectedImage in
             TankImageCropperView(
@@ -91,6 +108,23 @@ struct TankCardView: View {
         .buttonStyle(.plain)
     }
 
+    private var livestockSummaryButton: some View {
+        Button {
+            isLivestockSheetPresented = true
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "list.bullet.rectangle")
+                Text(livestockSummary.displayText)
+                    .lineLimit(1)
+                Spacer()
+            }
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(livestockSummary.speciesCount == 0 ? .secondary : .primary)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
     private var sensorSummary: some View {
         HStack(alignment: .center, spacing: 12) {
             Image(systemName: "thermometer.variable")
@@ -112,6 +146,10 @@ struct TankCardView: View {
                 }
             }
         }
+    }
+
+    private var livestockSummary: LivestockSummary {
+        livestockStore.summary(for: sensor.sensorID)
     }
 
     private var storedImage: NSImage? {
@@ -229,7 +267,8 @@ private struct SelectedCropImage: Identifiable {
             error: nil
         ),
         lastUpdated: Date(),
-        imageStore: TankImageStore()
+        imageStore: TankImageStore(),
+        livestockStore: LivestockStore()
     )
     .padding()
 }
