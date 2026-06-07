@@ -8,6 +8,8 @@ struct TankCardView: View {
 
     @ObservedObject var imageStore: TankImageStore
     @State private var imageErrorMessage: String?
+    @State private var cropperImage: NSImage?
+    @State private var isCropperPresented = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -51,32 +53,54 @@ struct TankCardView: View {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(Color.primary.opacity(0.08))
         }
+        .sheet(isPresented: $isCropperPresented, onDismiss: {
+            cropperImage = nil
+        }) {
+            if let cropperImage {
+                TankImageCropperView(
+                    image: cropperImage,
+                    onCancel: {
+                        isCropperPresented = false
+                    },
+                    onSave: { crop in
+                        saveCroppedImage(cropperImage, crop: crop)
+                    }
+                )
+            }
+        }
     }
 
     private var photoArea: some View {
         Button {
             choosePhoto()
         } label: {
-            ZStack {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(nsColor: .textBackgroundColor))
+            GeometryReader { proxy in
+                ZStack {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color(nsColor: .textBackgroundColor))
 
-                if let image = storedImage {
-                    Image(nsImage: image)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    VStack(spacing: 8) {
-                        Image(systemName: "photo")
-                            .font(.system(size: 30))
-                        Text("Choose Photo")
-                            .font(.callout.weight(.medium))
+                    if let image = storedImage {
+                        Image(nsImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: proxy.size.width, height: proxy.size.height)
+                            .clipped()
+                    } else {
+                        VStack(spacing: 8) {
+                            Image(systemName: "photo")
+                                .font(.system(size: 30))
+                            Text("No Photo")
+                                .font(.callout.weight(.medium))
+                            Text("Choose Photo")
+                                .font(.caption)
+                        }
+                        .foregroundStyle(.secondary)
                     }
-                    .foregroundStyle(.secondary)
                 }
+                .frame(width: proxy.size.width, height: proxy.size.height)
             }
             .frame(maxWidth: .infinity)
-            .aspectRatio(4 / 3, contentMode: .fit)
+            .aspectRatio(16 / 9, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
@@ -130,11 +154,38 @@ struct TankCardView: View {
             return
         }
 
+        let didAccess = url.startAccessingSecurityScopedResource()
+        defer {
+            if didAccess {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        let imageData: Data
         do {
-            try imageStore.storeImage(from: url, for: sensor.sensorID)
-            imageErrorMessage = nil
+            imageData = try Data(contentsOf: url)
         } catch {
             imageErrorMessage = error.localizedDescription
+            return
+        }
+
+        guard let image = NSImage(data: imageData) else {
+            imageErrorMessage = "画像を読み込めませんでした。"
+            return
+        }
+
+        cropperImage = image
+        isCropperPresented = true
+    }
+
+    private func saveCroppedImage(_ image: NSImage, crop: TankImageCrop) {
+        do {
+            try imageStore.storeCroppedImage(image, crop: crop, for: sensor.sensorID)
+            imageErrorMessage = nil
+            isCropperPresented = false
+        } catch {
+            imageErrorMessage = error.localizedDescription
+            isCropperPresented = false
         }
     }
 
