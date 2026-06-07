@@ -56,7 +56,7 @@ struct TankImageCropperView: View {
             }
         }
         .padding(20)
-        .frame(width: 760)
+        .frame(width: 760, height: 560)
         .onPreferenceChange(CropFrameSizeKey.self) { size in
             cropFrameSize = size
             offset = clampedOffset(offset, in: size, zoom: zoom)
@@ -104,6 +104,7 @@ struct TankImageCropperView: View {
             .preference(key: CropFrameSizeKey.self, value: cropSize)
         }
         .aspectRatio(cropAspectRatio, contentMode: .fit)
+        .frame(height: 405)
     }
 
     private func displayedImageSize(in cropSize: CGSize, zoom: Double) -> CGSize {

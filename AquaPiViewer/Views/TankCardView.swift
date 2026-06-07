@@ -8,8 +8,7 @@ struct TankCardView: View {
 
     @ObservedObject var imageStore: TankImageStore
     @State private var imageErrorMessage: String?
-    @State private var cropperImage: NSImage?
-    @State private var isCropperPresented = false
+    @State private var selectedCropImage: SelectedCropImage?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -53,20 +52,16 @@ struct TankCardView: View {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(Color.primary.opacity(0.08))
         }
-        .sheet(isPresented: $isCropperPresented, onDismiss: {
-            cropperImage = nil
-        }) {
-            if let cropperImage {
-                TankImageCropperView(
-                    image: cropperImage,
-                    onCancel: {
-                        isCropperPresented = false
-                    },
-                    onSave: { crop in
-                        saveCroppedImage(cropperImage, crop: crop)
-                    }
-                )
-            }
+        .sheet(item: $selectedCropImage) { selectedImage in
+            TankImageCropperView(
+                image: selectedImage.image,
+                onCancel: {
+                    selectedCropImage = nil
+                },
+                onSave: { crop in
+                    saveCroppedImage(selectedImage.image, crop: crop)
+                }
+            )
         }
     }
 
@@ -174,18 +169,17 @@ struct TankCardView: View {
             return
         }
 
-        cropperImage = image
-        isCropperPresented = true
+        selectedCropImage = SelectedCropImage(image: image)
     }
 
     private func saveCroppedImage(_ image: NSImage, crop: TankImageCrop) {
         do {
             try imageStore.storeCroppedImage(image, crop: crop, for: sensor.sensorID)
             imageErrorMessage = nil
-            isCropperPresented = false
+            selectedCropImage = nil
         } catch {
             imageErrorMessage = error.localizedDescription
-            isCropperPresented = false
+            selectedCropImage = nil
         }
     }
 
@@ -195,6 +189,11 @@ struct TankCardView: View {
         formatter.timeStyle = .short
         return formatter
     }()
+}
+
+private struct SelectedCropImage: Identifiable {
+    let id = UUID()
+    let image: NSImage
 }
 
 #Preview {
