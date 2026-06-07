@@ -142,7 +142,7 @@ struct TankCardView: View {
                         .font(.system(size: 30, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                     Spacer()
-                    StatusChipView(status: sensor.status)
+                    WaterSafetyStatusChipView(status: waterSafetyStatus)
                 }
             }
         }
@@ -150,6 +150,15 @@ struct TankCardView: View {
 
     private var livestockSummary: LivestockSummary {
         livestockStore.summary(for: sensor.sensorID)
+    }
+
+    private var waterSafetyStatus: WaterSafetyStatus {
+        WaterSafetyEvaluator.evaluate(
+            temperatureC: sensor.temperatureC,
+            minC: sensor.min,
+            maxC: sensor.max,
+            crcOk: sensor.crcOK
+        )
     }
 
     private var storedImage: NSImage? {
@@ -172,12 +181,8 @@ struct TankCardView: View {
         switch (sensor.min, sensor.max) {
         case let (min?, max?):
             return String(format: "Range %.1f - %.1f℃", min, max)
-        case let (min?, nil):
-            return String(format: "Min %.1f℃", min)
-        case let (nil, max?):
-            return String(format: "Max %.1f℃", max)
-        case (nil, nil):
-            return "Range --"
+        case (_, _):
+            return "Range unavailable"
         }
     }
 

@@ -62,12 +62,19 @@ struct AquariumIndexView: View {
 
     private var header: some View {
         HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("AquaPi")
-                    .font(.largeTitle.weight(.bold))
-                Text("Aquarium monitoring dashboard")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: "fish.circle.fill")
+                    .font(.system(size: 44, weight: .semibold))
+                    .foregroundStyle(.cyan)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("AquaPi")
+                        .font(.largeTitle.weight(.bold))
+                        .foregroundStyle(.cyan)
+                    Text("Aquarium monitoring dashboard")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Spacer()
