@@ -14,17 +14,7 @@ struct TankCardView: View {
         VStack(alignment: .leading, spacing: 12) {
             photoArea
 
-            Text(sensor.name)
-                .font(.headline)
-                .lineLimit(1)
-
-            HStack(alignment: .firstTextBaseline) {
-                Text(temperatureText)
-                    .font(.system(size: 30, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                Spacer()
-                StatusChipView(status: sensor.status)
-            }
+            sensorSummary
 
             Text(rangeText)
                 .font(.subheadline)
@@ -99,6 +89,29 @@ struct TankCardView: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
+    }
+
+    private var sensorSummary: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: "thermometer.variable")
+                .font(.system(size: 38, weight: .semibold))
+                .foregroundStyle(.cyan)
+                .frame(width: 42)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(sensor.name)
+                    .font(.headline)
+                    .lineLimit(1)
+
+                HStack(alignment: .firstTextBaseline) {
+                    Text(temperatureText)
+                        .font(.system(size: 30, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                    Spacer()
+                    StatusChipView(status: sensor.status)
+                }
+            }
+        }
     }
 
     private var storedImage: NSImage? {

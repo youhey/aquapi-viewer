@@ -121,7 +121,7 @@ final class TankImageStore: ObservableObject {
         let scaleY = Self.normalizedImageSize.height / crop.cropFrameSize.height
         let imageOrigin = CGPoint(
             x: ((crop.cropFrameSize.width - crop.imageDisplaySize.width) / 2 + crop.offset.width) * scaleX,
-            y: ((crop.cropFrameSize.height - crop.imageDisplaySize.height) / 2 + crop.offset.height) * scaleY
+            y: ((crop.cropFrameSize.height - crop.imageDisplaySize.height) / 2 - crop.offset.height) * scaleY
         )
         let imageRect = NSRect(
             x: imageOrigin.x,
