@@ -12,8 +12,6 @@ struct AquariumIndexView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                header
-
                 if let errorMessage = viewModel.errorMessage {
                     errorBanner(errorMessage)
                 }
@@ -27,9 +25,6 @@ struct AquariumIndexView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Aquariums")
-                        .font(.title2.weight(.semibold))
-
                     if viewModel.isLoading && viewModel.visibleAquariumSensors.isEmpty {
                         ProgressView()
                             .frame(maxWidth: .infinity, minHeight: 220)
@@ -65,40 +60,37 @@ struct AquariumIndexView: View {
             .padding(24)
         }
         .background(Color(nsColor: .windowBackgroundColor))
+        .background(WindowTitleConfigurator(title: "AquaPi"))
         .frame(minWidth: 720, minHeight: 520)
         .task {
             livestockStore.load()
             await viewModel.loadIfNeeded()
         }
-    }
-
-    private var header: some View {
-        HStack(alignment: .top, spacing: 16) {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: "fish.circle.fill")
-                    .font(.system(size: 44, weight: .semibold))
-                    .foregroundStyle(.cyan)
-
-                VStack(alignment: .leading, spacing: 4) {
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                HStack(spacing: 6) {
+                    Image(systemName: "fish.circle.fill")
+                        .font(.headline)
                     Text("AquaPi")
-                        .font(.largeTitle.weight(.bold))
-                        .foregroundStyle(.cyan)
-                    Text("Aquarium monitoring dashboard")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(.headline.weight(.semibold))
                 }
+                .padding(.horizontal, 8)
+                .foregroundStyle(.cyan)
+                .accessibilityLabel("AquaPi")
             }
 
-            Spacer()
+            ToolbarSpacer(.flexible)
 
-            Button {
-                Task {
-                    await viewModel.reload()
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    Task {
+                        await viewModel.reload()
+                    }
+                } label: {
+                    Label("Reload", systemImage: "arrow.clockwise")
                 }
-            } label: {
-                Label("Reload", systemImage: "arrow.clockwise")
+                .disabled(viewModel.isLoading)
             }
-            .disabled(viewModel.isLoading)
         }
     }
 
@@ -118,4 +110,27 @@ struct AquariumIndexView: View {
 
 #Preview {
     AquariumIndexView()
+}
+
+private struct WindowTitleConfigurator: NSViewRepresentable {
+    let title: String
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            configure(window: view.window)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            configure(window: nsView.window)
+        }
+    }
+
+    private func configure(window: NSWindow?) {
+        window?.title = title
+        window?.titleVisibility = .hidden
+    }
 }
