@@ -92,7 +92,7 @@ struct TankCardView: View {
             )
         }
         .sheet(isPresented: $isJournalListSheetPresented) {
-            TankJournalListView(
+            TankJournalCalendarView(
                 sensor: sensor,
                 store: journalStore,
                 onClose: {

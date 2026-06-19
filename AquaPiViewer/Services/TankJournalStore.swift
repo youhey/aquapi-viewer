@@ -82,6 +82,17 @@ final class TankJournalStore: ObservableObject {
         }
     }
 
+    func entries(for tankId: String, month: Date) -> [TankJournalEntry] {
+        do {
+            let entries = try fetchEntries(for: tankId, month: month)
+            errorMessage = nil
+            return entries
+        } catch {
+            handle(error)
+            return []
+        }
+    }
+
     func refreshSummaries(for tankIds: [String]) {
         for tankId in tankIds {
             refreshSummary(for: tankId)
@@ -228,6 +239,38 @@ final class TankJournalStore: ObservableObject {
         var entries: [TankJournalEntry] = []
         try withPreparedStatement(sql) { statement in
             bind(tankId, at: 1, to: statement)
+
+            var result = sqlite3_step(statement)
+            while result == SQLITE_ROW {
+                if let entry = entry(from: statement) {
+                    entries.append(entry)
+                }
+                result = sqlite3_step(statement)
+            }
+
+            guard result == SQLITE_DONE else {
+                throw TankJournalStoreError.sqlite(sqliteMessage)
+            }
+        }
+        return entries
+    }
+
+    private func fetchEntries(for tankId: String, month: Date) throws -> [TankJournalEntry] {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: month) else {
+            return []
+        }
+
+        let sql = """
+        SELECT id, tank_id, tank_display_code, tank_name, kind, text, occurred_at, created_at, updated_at
+        FROM tank_journal_entries
+        WHERE tank_id = ? AND occurred_at >= ? AND occurred_at < ?
+        ORDER BY occurred_at ASC, created_at ASC;
+        """
+        var entries: [TankJournalEntry] = []
+        try withPreparedStatement(sql) { statement in
+            bind(tankId, at: 1, to: statement)
+            bind(Self.timestampFormatter.string(from: monthInterval.start), at: 2, to: statement)
+            bind(Self.timestampFormatter.string(from: monthInterval.end), at: 3, to: statement)
 
             var result = sqlite3_step(statement)
             while result == SQLITE_ROW {

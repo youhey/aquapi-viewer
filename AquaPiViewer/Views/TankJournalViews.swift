@@ -300,7 +300,7 @@ struct TankJournalListView: View {
     }()
 }
 
-private struct TankJournalEntryEditorView: View {
+struct TankJournalEntryEditorView: View {
     let entry: TankJournalEntry
     let onCancel: () -> Void
     let onSave: (Date, String) -> Void
