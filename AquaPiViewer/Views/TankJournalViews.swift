@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TankJournalQuickActionsView: View {
     let summary: TankJournalDayPartSummary
+    let feedbackMessage: String?
     let onQuickRecord: (TankJournalKind) -> Void
     let onNote: () -> Void
     let onOpenList: () -> Void
@@ -40,6 +41,17 @@ struct TankJournalQuickActionsView: View {
                 journalButton(kind: .note) {
                     onNote()
                 }
+
+                if let feedbackMessage {
+                    Text(feedbackMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .transition(.opacity)
+                }
+
+                Spacer(minLength: 0)
             }
         }
     }
@@ -355,6 +367,7 @@ private struct TankJournalEntryEditorView: View {
 #Preview {
     TankJournalQuickActionsView(
         summary: TankJournalDayPartSummary(morning: 1, afternoon: 0, evening: 1),
+        feedbackMessage: "餌やりを記録しました。",
         onQuickRecord: { _ in },
         onNote: {},
         onOpenList: {}

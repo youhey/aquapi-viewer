@@ -38,6 +38,7 @@ struct TankCardView: View {
 
             TankJournalQuickActionsView(
                 summary: journalStore.todaySummary(for: sensor.sensorID),
+                feedbackMessage: journalFeedbackMessage,
                 onQuickRecord: recordJournalEntry,
                 onNote: {
                     isJournalNoteSheetPresented = true
@@ -46,13 +47,6 @@ struct TankCardView: View {
                     isJournalListSheetPresented = true
                 }
             )
-
-            if let journalFeedbackMessage {
-                Text(journalFeedbackMessage)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
 
             if let imageErrorMessage {
                 Text(imageErrorMessage)
