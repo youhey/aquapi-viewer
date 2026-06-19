@@ -10,6 +10,9 @@ struct TankCardView: View {
 
     @ObservedObject var imageStore: TankImageStore
     @ObservedObject var livestockStore: LivestockStore
+    let isFanOperationInProgress: Bool
+    let onSetFanMode: (FanMode) -> Void
+
     @State private var imageErrorMessage: String?
     @State private var selectedCropImage: SelectedCropImage?
     @State private var isLivestockPreviewPresented = false
@@ -159,12 +162,21 @@ struct TankCardView: View {
                     .font(.headline)
                     .lineLimit(1)
 
-                HStack(alignment: .firstTextBaseline) {
+                HStack(alignment: .center, spacing: 12) {
                     Text(temperatureText)
                         .font(.system(size: 30, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                     Spacer()
                     WaterSafetyStatusChipView(status: waterSafetyStatus)
+                    if sensor.hasFanControl {
+                        FanControlMenuView(
+                            mode: sensor.effectiveFanMode,
+                            state: sensor.effectiveFanState,
+                            reason: sensor.fanReason,
+                            isInProgress: isFanOperationInProgress,
+                            onSelectMode: onSetFanMode
+                        )
+                    }
                 }
             }
         }
@@ -314,7 +326,9 @@ private struct SelectedCropImage: Identifiable {
         ),
         temperatureSeriesErrorMessage: nil,
         imageStore: TankImageStore(),
-        livestockStore: LivestockStore()
+        livestockStore: LivestockStore(),
+        isFanOperationInProgress: false,
+        onSetFanMode: { _ in }
     )
     .padding()
 }

@@ -9,6 +9,10 @@ import SwiftUI
 
 @main
 struct AquaPiViewerApp: App {
+    init() {
+        AppEventLogger().log("app_launched")
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

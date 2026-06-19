@@ -18,6 +18,10 @@ struct AquariumIndexView: View {
                     errorBanner(errorMessage)
                 }
 
+                if let fanControlErrorMessage = viewModel.fanControlErrorMessage {
+                    errorBanner(fanControlErrorMessage)
+                }
+
                 if let livestockErrorMessage = livestockStore.errorMessage {
                     errorBanner("生体メモ: \(livestockErrorMessage)")
                 }
@@ -45,7 +49,13 @@ struct AquariumIndexView: View {
                                     temperatureSeries: viewModel.temperatureSeriesBySensorId[sensor.sensorID],
                                     temperatureSeriesErrorMessage: viewModel.temperatureSeriesErrorsBySensorId[sensor.sensorID],
                                     imageStore: imageStore,
-                                    livestockStore: livestockStore
+                                    livestockStore: livestockStore,
+                                    isFanOperationInProgress: viewModel.isFanOperationInProgress(for: sensor),
+                                    onSetFanMode: { mode in
+                                        Task {
+                                            await viewModel.setFanMode(mode, for: sensor)
+                                        }
+                                    }
                                 )
                             }
                         }

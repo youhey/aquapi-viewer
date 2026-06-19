@@ -37,18 +37,87 @@ struct AquaPiClient {
         }
     }
 
+    func fetchSummary() async throws -> AquaSummaryResponse {
+        let url = baseURL.appendingPathComponent("api/summary")
+        let data = try await fetchData(from: url)
+
+        do {
+            return try JSONDecoder().decode(AquaSummaryResponse.self, from: data)
+        } catch {
+            throw AquaPiClientError.decoding(error)
+        }
+    }
+
+    func fetchFans() async throws -> [AquaFan] {
+        let url = baseURL.appendingPathComponent("api/fans")
+        let data = try await fetchData(from: url)
+
+        do {
+            return try JSONDecoder().decode(AquaFansResponse.self, from: data).fans
+        } catch {
+            throw AquaPiClientError.decoding(error)
+        }
+    }
+
+    func setFanManualOn(id: String) async throws -> AquaFan {
+        try await setFanMode(id: id, action: "manual-on")
+    }
+
+    func setFanManualOff(id: String) async throws -> AquaFan {
+        try await setFanMode(id: id, action: "manual-off")
+    }
+
+    func setFanAuto(id: String) async throws -> AquaFan {
+        try await setFanMode(id: id, action: "auto")
+    }
+
+    private func setFanMode(id: String, action: String) async throws -> AquaFan {
+        let url = baseURL
+            .appendingPathComponent("api/fans")
+            .appendingPathComponent(id)
+            .appendingPathComponent(action)
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+
+        let data = try await fetchData(for: request)
+        do {
+            return try JSONDecoder().decode(AquaFanResponse.self, from: data).fan
+        } catch {
+            throw AquaPiClientError.decoding(error)
+        }
+    }
+
     private func fetchData(from url: URL) async throws -> Data {
-        let (data, response) = try await session.data(from: url)
+        try await fetchData(for: URLRequest(url: url))
+    }
+
+    private func fetchData(for request: URLRequest) async throws -> Data {
+        let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw AquaPiClientError.invalidResponse
         }
 
         guard (200..<300).contains(httpResponse.statusCode) else {
-            throw AquaPiClientError.httpStatus(httpResponse.statusCode)
+            throw AquaPiClientError.httpStatus(
+                httpResponse.statusCode,
+                message: Self.errorMessage(from: data)
+            )
         }
 
         return data
+    }
+
+    private static func errorMessage(from data: Data) -> String? {
+        guard !data.isEmpty else {
+            return nil
+        }
+
+        guard let payload = try? JSONDecoder().decode(AquaPiAPIErrorResponse.self, from: data) else {
+            return nil
+        }
+
+        return payload.message ?? payload.error
     }
 
     private func seriesURL(sensorId: String, range: String) throws -> URL {
@@ -73,8 +142,26 @@ struct AquaPiClient {
 enum AquaPiClientError: LocalizedError {
     case invalidURL
     case invalidResponse
-    case httpStatus(Int)
+    case httpStatus(Int, message: String?)
     case decoding(Error)
+
+    var statusCode: Int? {
+        switch self {
+        case .httpStatus(let statusCode, _):
+            statusCode
+        case .invalidURL, .invalidResponse, .decoding:
+            nil
+        }
+    }
+
+    var apiMessage: String? {
+        switch self {
+        case .httpStatus(_, let message):
+            message
+        case .invalidURL, .invalidResponse, .decoding:
+            nil
+        }
+    }
 
     var errorDescription: String? {
         switch self {
@@ -82,10 +169,19 @@ enum AquaPiClientError: LocalizedError {
             "API URL を組み立てられませんでした。"
         case .invalidResponse:
             "API レスポンスを解釈できませんでした。"
-        case .httpStatus(let statusCode):
-            "API が HTTP \(statusCode) を返しました。"
+        case .httpStatus(let statusCode, let message):
+            if let message, !message.isEmpty {
+                "API が HTTP \(statusCode) を返しました: \(message)"
+            } else {
+                "API が HTTP \(statusCode) を返しました。"
+            }
         case .decoding(let error):
             "API レスポンスの JSON decode に失敗しました: \(error.localizedDescription)"
         }
     }
+}
+
+private struct AquaPiAPIErrorResponse: Decodable {
+    let error: String?
+    let message: String?
 }
