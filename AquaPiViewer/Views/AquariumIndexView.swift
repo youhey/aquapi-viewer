@@ -8,7 +8,7 @@ struct AquariumIndexView: View {
     private let columns = [
         GridItem(.adaptive(minimum: 240), spacing: 16)
     ]
-    private let autoReloadIntervalNanoseconds: UInt64 = 30 * 1_000_000_000
+    private let autoReloadIntervalNanoseconds: UInt64 = 60 * 1_000_000_000
 
     var body: some View {
         ScrollView {
@@ -84,14 +84,23 @@ struct AquariumIndexView: View {
             ToolbarSpacer(.flexible)
 
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    Task {
-                        await viewModel.reload()
+                HStack(spacing: 8) {
+                    Text("Auto Refresh 60s")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+
+                    Button {
+                        Task {
+                            await viewModel.reload()
+                        }
+                    } label: {
+                        RefreshIconView(isLoading: viewModel.isLoading)
                     }
-                } label: {
-                    Label("Reload", systemImage: "arrow.clockwise")
+                    .disabled(viewModel.isLoading)
+                    .help("Refresh")
                 }
-                .disabled(viewModel.isLoading)
+                .padding(.leading, 12)
+                .padding(.trailing, 8)
             }
         }
     }
@@ -124,6 +133,29 @@ struct AquariumIndexView: View {
 
 #Preview {
     AquariumIndexView()
+}
+
+private struct RefreshIconView: View {
+    let isLoading: Bool
+
+    private let rotationDuration = 0.8
+
+    var body: some View {
+        if isLoading {
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
+                Image(systemName: "arrow.clockwise")
+                    .rotationEffect(.degrees(rotationAngle(at: context.date)))
+            }
+        } else {
+            Image(systemName: "arrow.clockwise")
+        }
+    }
+
+    private func rotationAngle(at date: Date) -> Double {
+        let elapsed = date.timeIntervalSinceReferenceDate
+            .truncatingRemainder(dividingBy: rotationDuration)
+        return elapsed / rotationDuration * 360
+    }
 }
 
 private struct WindowTitleConfigurator: NSViewRepresentable {
