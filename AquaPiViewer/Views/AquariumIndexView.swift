@@ -8,6 +8,7 @@ struct AquariumIndexView: View {
     private let columns = [
         GridItem(.adaptive(minimum: 240), spacing: 16)
     ]
+    private let autoReloadIntervalNanoseconds: UInt64 = 30 * 1_000_000_000
 
     var body: some View {
         ScrollView {
@@ -65,6 +66,7 @@ struct AquariumIndexView: View {
         .task {
             livestockStore.load()
             await viewModel.loadIfNeeded()
+            await runAutoReload()
         }
         .toolbar {
             ToolbarItem(placement: .navigation) {
@@ -91,6 +93,18 @@ struct AquariumIndexView: View {
                 }
                 .disabled(viewModel.isLoading)
             }
+        }
+    }
+
+    private func runAutoReload() async {
+        while !Task.isCancelled {
+            do {
+                try await Task.sleep(nanoseconds: autoReloadIntervalNanoseconds)
+            } catch {
+                return
+            }
+
+            await viewModel.reload()
         }
     }
 
