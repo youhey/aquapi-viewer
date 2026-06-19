@@ -4,6 +4,7 @@ struct AquariumIndexView: View {
     @StateObject private var viewModel = AquariumIndexViewModel()
     @StateObject private var imageStore = TankImageStore()
     @StateObject private var livestockStore = LivestockStore()
+    @StateObject private var journalStore = TankJournalStore()
 
     private let columns = [
         GridItem(.adaptive(minimum: 240), spacing: 16)
@@ -25,6 +26,10 @@ struct AquariumIndexView: View {
                     errorBanner("生体メモ: \(livestockErrorMessage)")
                 }
 
+                if let journalErrorMessage = journalStore.errorMessage {
+                    errorBanner("日誌: \(journalErrorMessage)")
+                }
+
                 VStack(alignment: .leading, spacing: 16) {
                     if viewModel.isLoading && viewModel.visibleAquariumSensors.isEmpty {
                         ProgressView()
@@ -39,20 +44,7 @@ struct AquariumIndexView: View {
                     } else {
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(viewModel.visibleAquariumSensors) { sensor in
-                                TankCardView(
-                                    sensor: sensor,
-                                    lastUpdated: viewModel.lastUpdated,
-                                    temperatureSeries: viewModel.temperatureSeriesBySensorId[sensor.sensorID],
-                                    temperatureSeriesErrorMessage: viewModel.temperatureSeriesErrorsBySensorId[sensor.sensorID],
-                                    imageStore: imageStore,
-                                    livestockStore: livestockStore,
-                                    isFanOperationInProgress: viewModel.isFanOperationInProgress(for: sensor),
-                                    onSetFanMode: { mode in
-                                        Task {
-                                            await viewModel.setFanMode(mode, for: sensor)
-                                        }
-                                    }
-                                )
+                                tankCard(for: sensor)
                             }
                         }
                     }
@@ -66,7 +58,11 @@ struct AquariumIndexView: View {
         .task {
             livestockStore.load()
             await viewModel.loadIfNeeded()
+            journalStore.refreshSummaries(for: visibleSensorIds)
             await runAutoReload()
+        }
+        .onChange(of: visibleSensorIds) {
+            journalStore.refreshSummaries(for: visibleSensorIds)
         }
         .toolbar {
             ToolbarItem(placement: .navigation) {
@@ -91,7 +87,7 @@ struct AquariumIndexView: View {
 
                     Button {
                         Task {
-                            await viewModel.reload()
+                            await reloadSensors()
                         }
                     } label: {
                         RefreshIconView(isLoading: viewModel.isLoading)
@@ -113,8 +109,34 @@ struct AquariumIndexView: View {
                 return
             }
 
-            await viewModel.reload()
+            await reloadSensors()
         }
+    }
+
+    private var visibleSensorIds: [String] {
+        viewModel.visibleAquariumSensors.map(\.sensorID)
+    }
+
+    private func tankCard(for sensor: AquaReading) -> some View {
+        TankCardView(
+            sensor: sensor,
+            temperatureSeries: viewModel.temperatureSeriesBySensorId[sensor.sensorID],
+            temperatureSeriesErrorMessage: viewModel.temperatureSeriesErrorsBySensorId[sensor.sensorID],
+            imageStore: imageStore,
+            livestockStore: livestockStore,
+            journalStore: journalStore,
+            isFanOperationInProgress: viewModel.isFanOperationInProgress(for: sensor),
+            onSetFanMode: { mode in
+                Task {
+                    await viewModel.setFanMode(mode, for: sensor)
+                }
+            }
+        )
+    }
+
+    private func reloadSensors() async {
+        await viewModel.reload()
+        journalStore.refreshSummaries(for: visibleSensorIds)
     }
 
     private func errorBanner(_ message: String) -> some View {

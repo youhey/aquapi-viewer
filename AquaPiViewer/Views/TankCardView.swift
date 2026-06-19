@@ -4,12 +4,12 @@ import UniformTypeIdentifiers
 
 struct TankCardView: View {
     let sensor: AquaReading
-    let lastUpdated: Date?
     let temperatureSeries: TemperatureSeriesResponse?
     let temperatureSeriesErrorMessage: String?
 
     @ObservedObject var imageStore: TankImageStore
     @ObservedObject var livestockStore: LivestockStore
+    @ObservedObject var journalStore: TankJournalStore
     let isFanOperationInProgress: Bool
     let onSetFanMode: (FanMode) -> Void
 
@@ -17,6 +17,9 @@ struct TankCardView: View {
     @State private var selectedCropImage: SelectedCropImage?
     @State private var isLivestockPreviewPresented = false
     @State private var isLivestockSheetPresented = false
+    @State private var isJournalNoteSheetPresented = false
+    @State private var isJournalListSheetPresented = false
+    @State private var journalFeedbackMessage: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -33,17 +36,23 @@ struct TankCardView: View {
                 errorMessage: temperatureSeriesErrorMessage
             )
 
-            Text(rangeText)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+            TankJournalQuickActionsView(
+                summary: journalStore.todaySummary(for: sensor.sensorID),
+                onQuickRecord: recordJournalEntry,
+                onNote: {
+                    isJournalNoteSheetPresented = true
+                },
+                onOpenList: {
+                    isJournalListSheetPresented = true
+                }
+            )
 
-            HStack(spacing: 6) {
-                Image(systemName: "clock")
-                Text(lastUpdatedText)
+            if let journalFeedbackMessage {
+                Text(journalFeedbackMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
 
             if let imageErrorMessage {
                 Text(imageErrorMessage)
@@ -53,7 +62,7 @@ struct TankCardView: View {
             }
         }
         .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 366, maxHeight: 366, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 382, maxHeight: 382, alignment: .topLeading)
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
@@ -69,6 +78,31 @@ struct TankCardView: View {
                 onSave: { items in
                     livestockStore.updateItems(items, for: sensor.sensorID)
                     isLivestockSheetPresented = false
+                }
+            )
+        }
+        .sheet(isPresented: $isJournalNoteSheetPresented) {
+            TankJournalNoteEditorView(
+                tankName: sensor.name,
+                onCancel: {
+                    isJournalNoteSheetPresented = false
+                },
+                onSave: { text in
+                    if journalStore.createEntry(kind: .note, text: text, for: sensor) {
+                        journalFeedbackMessage = "日誌を記録しました。"
+                    } else {
+                        journalFeedbackMessage = journalStore.errorMessage
+                    }
+                    isJournalNoteSheetPresented = false
+                }
+            )
+        }
+        .sheet(isPresented: $isJournalListSheetPresented) {
+            TankJournalListView(
+                sensor: sensor,
+                store: journalStore,
+                onClose: {
+                    isJournalListSheetPresented = false
                 }
             )
         }
@@ -211,23 +245,6 @@ struct TankCardView: View {
         return String(format: "%.1f℃", temperature)
     }
 
-    private var rangeText: String {
-        switch (sensor.min, sensor.max) {
-        case let (min?, max?):
-            return String(format: "Safety range %.1f - %.1f℃", min, max)
-        case (_, _):
-            return "Safety range unavailable"
-        }
-    }
-
-    private var lastUpdatedText: String {
-        guard let lastUpdated else {
-            return "Last updated --"
-        }
-
-        return "Last updated \(Self.lastUpdatedFormatter.string(from: lastUpdated))"
-    }
-
     private func choosePhoto() {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
@@ -280,12 +297,13 @@ struct TankCardView: View {
         }
     }
 
-    private static let lastUpdatedFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
-        return formatter
-    }()
+    private func recordJournalEntry(_ kind: TankJournalKind) {
+        if journalStore.createEntry(kind: kind, for: sensor) {
+            journalFeedbackMessage = "\(kind.displayName)を記録しました。"
+        } else {
+            journalFeedbackMessage = journalStore.errorMessage
+        }
+    }
 }
 
 private struct SelectedCropImage: Identifiable {
@@ -312,7 +330,6 @@ private struct SelectedCropImage: Identifiable {
             crcOK: true,
             error: nil
         ),
-        lastUpdated: Date(),
         temperatureSeries: TemperatureSeriesResponse(
             sensorId: "28-00000020f5ed",
             name: "増田川水槽",
@@ -327,6 +344,7 @@ private struct SelectedCropImage: Identifiable {
         temperatureSeriesErrorMessage: nil,
         imageStore: TankImageStore(),
         livestockStore: LivestockStore(),
+        journalStore: TankJournalStore(databasePath: ":memory:"),
         isFanOperationInProgress: false,
         onSetFanMode: { _ in }
     )
