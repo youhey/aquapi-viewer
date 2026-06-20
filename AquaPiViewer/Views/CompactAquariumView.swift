@@ -6,12 +6,7 @@ struct CompactAquariumView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if sensors.isEmpty {
-                ContentUnavailableView(
-                    "No tank data",
-                    systemImage: "drop.degreesign",
-                    description: Text("表示対象の水槽センサーがありません。")
-                )
-                .frame(maxWidth: .infinity, minHeight: 160)
+                NoTankDataView()
             } else {
                 ViewThatFits(in: .horizontal) {
                     tankGrid(columns: twoColumns)
@@ -27,8 +22,8 @@ struct CompactAquariumView: View {
 
     private func tankGrid(columns: [GridItem]) -> some View {
         LazyVGrid(columns: columns, spacing: 8) {
-            ForEach(Array(sensors.enumerated()), id: \.element.id) { index, sensor in
-                CompactTankCardView(sensor: sensor, fallbackIndex: index + 1)
+            ForEach(sensors) { sensor in
+                CompactTankCardView(sensor: sensor)
             }
         }
     }
@@ -45,18 +40,26 @@ struct CompactAquariumView: View {
     }
 }
 
+struct NoTankDataView: View {
+    var body: some View {
+        ContentUnavailableView(
+            "No tank data",
+            systemImage: "drop.degreesign",
+            description: Text("表示対象の水槽センサーがありません。")
+        )
+        .frame(maxWidth: .infinity, minHeight: 160)
+    }
+}
+
 private struct CompactTankCardView: View {
     let sensor: AquaReading
-    let fallbackIndex: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(displayCode)
-                    .font(.caption.weight(.bold))
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Image(systemName: "thermometer.variable")
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.cyan)
-                    .frame(minWidth: 36, alignment: .leading)
-                    .lineLimit(1)
 
                 Text(sensor.name)
                     .font(.subheadline.weight(.semibold))
@@ -64,11 +67,11 @@ private struct CompactTankCardView: View {
 
                 Spacer(minLength: 6)
 
-                if sensor.effectiveFanState == .on {
-                    Image(systemName: "fan.fill")
+                if sensor.hasFanControl {
+                    Image(systemName: sensor.effectiveFanMode.iconName)
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.orange)
-                        .help("Fan running")
+                        .foregroundStyle(fanIconColor)
+                        .help(fanHelpText)
                 }
             }
 
@@ -99,35 +102,6 @@ private struct CompactTankCardView: View {
         }
     }
 
-    private var displayCode: String {
-        let candidates = [
-            sensor.displayCode,
-            shortASCIIName,
-            sensor.name
-        ]
-
-        for candidate in candidates {
-            if let normalized = candidate?.trimmingCharacters(in: .whitespacesAndNewlines), !normalized.isEmpty {
-                return normalized
-            }
-        }
-
-        return "T\(fallbackIndex)"
-    }
-
-    private var shortASCIIName: String? {
-        let ascii = String(sensor.name
-            .uppercased()
-            .unicodeScalars
-            .filter { scalar in
-                (65...90).contains(Int(scalar.value))
-            })
-        guard !ascii.isEmpty else {
-            return nil
-        }
-        return String(ascii.prefix(3))
-    }
-
     private var temperatureText: String {
         guard let temperature = sensor.temperatureC, temperature.isFinite else {
             return "--.-°C"
@@ -143,6 +117,29 @@ private struct CompactTankCardView: View {
             maxC: sensor.max,
             crcOk: sensor.crcOK
         )
+    }
+
+    private var fanHelpText: String {
+        var text = "Fan \(sensor.effectiveFanMode.label)"
+        if let reason = sensor.fanReason, !reason.isEmpty {
+            text += " - \(reason)"
+        }
+        return text
+    }
+
+    private var fanIconColor: Color {
+        switch sensor.effectiveFanMode {
+        case .auto:
+            sensor.effectiveFanState == .on ? .blue : .gray
+        case .manualOn:
+            .orange
+        case .manualOff:
+            .red
+        case .unknown:
+            .gray
+        case .disabled:
+            .gray.opacity(0.5)
+        }
     }
 
     private var statusColor: Color {
