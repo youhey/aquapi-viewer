@@ -5,6 +5,7 @@ struct AquariumIndexView: View {
     @StateObject private var imageStore = TankImageStore()
     @StateObject private var livestockStore = LivestockStore()
     @StateObject private var journalStore = TankJournalStore()
+    @AppStorage("aquapi.displayMode") private var displayModeRawValue = AquaDisplayMode.normal.rawValue
 
     private let columns = [
         GridItem(.adaptive(minimum: 240), spacing: 16)
@@ -14,47 +15,22 @@ struct AquariumIndexView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                if let errorMessage = viewModel.errorMessage {
-                    errorBanner(errorMessage)
-                }
+                errorBanners
 
-                if let fanControlErrorMessage = viewModel.fanControlErrorMessage {
-                    errorBanner(fanControlErrorMessage)
-                }
-
-                if let livestockErrorMessage = livestockStore.errorMessage {
-                    errorBanner("生体メモ: \(livestockErrorMessage)")
-                }
-
-                if let journalErrorMessage = journalStore.errorMessage {
-                    errorBanner("日誌: \(journalErrorMessage)")
-                }
-
-                VStack(alignment: .leading, spacing: 16) {
-                    if viewModel.isLoading && viewModel.visibleAquariumSensors.isEmpty {
-                        ProgressView()
-                            .frame(maxWidth: .infinity, minHeight: 220)
-                    } else if viewModel.visibleAquariumSensors.isEmpty {
-                        ContentUnavailableView(
-                            "No visible aquarium sensors.",
-                            systemImage: "drop.degreesign",
-                            description: Text("表示対象の水槽センサーがありません。")
-                        )
-                        .frame(maxWidth: .infinity, minHeight: 220)
-                    } else {
-                        LazyVGrid(columns: columns, spacing: 16) {
-                            ForEach(viewModel.visibleAquariumSensors) { sensor in
-                                tankCard(for: sensor)
-                            }
-                        }
-                    }
+                if displayMode == .compact {
+                    compactContent
+                } else {
+                    normalContent
                 }
             }
-            .padding(24)
+            .padding(displayMode == .compact ? 12 : 24)
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .background(WindowTitleConfigurator(title: "AquaPi"))
-        .frame(minWidth: 720, minHeight: 520)
+        .frame(
+            minWidth: displayMode == .compact ? 360 : 720,
+            minHeight: displayMode == .compact ? 320 : 520
+        )
         .task {
             livestockStore.load()
             await viewModel.loadIfNeeded()
@@ -75,6 +51,17 @@ struct AquariumIndexView: View {
                 .padding(.horizontal, 8)
                 .foregroundStyle(.cyan)
                 .accessibilityLabel("AquaPi")
+            }
+
+            ToolbarItem(placement: .principal) {
+                Picker("Display Mode", selection: $displayModeRawValue) {
+                    ForEach(AquaDisplayMode.allCases) { mode in
+                        Text(mode.label)
+                            .tag(mode.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 180)
             }
 
             ToolbarSpacer(.flexible)
@@ -115,6 +102,62 @@ struct AquariumIndexView: View {
 
     private var visibleSensorIds: [String] {
         viewModel.visibleAquariumSensors.map(\.sensorID)
+    }
+
+    private var displayMode: AquaDisplayMode {
+        AquaDisplayMode(rawValue: displayModeRawValue) ?? .normal
+    }
+
+    private var errorBanners: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let errorMessage = viewModel.errorMessage {
+                errorBanner(errorMessage)
+            }
+
+            if let fanControlErrorMessage = viewModel.fanControlErrorMessage {
+                errorBanner(fanControlErrorMessage)
+            }
+
+            if displayMode == .normal {
+                if let livestockErrorMessage = livestockStore.errorMessage {
+                    errorBanner("生体メモ: \(livestockErrorMessage)")
+                }
+
+                if let journalErrorMessage = journalStore.errorMessage {
+                    errorBanner("日誌: \(journalErrorMessage)")
+                }
+            }
+        }
+    }
+
+    private var normalContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if viewModel.isLoading && viewModel.visibleAquariumSensors.isEmpty {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 220)
+            } else if viewModel.visibleAquariumSensors.isEmpty {
+                ContentUnavailableView(
+                    "No visible aquarium sensors.",
+                    systemImage: "drop.degreesign",
+                    description: Text("表示対象の水槽センサーがありません。")
+                )
+                .frame(maxWidth: .infinity, minHeight: 220)
+            } else {
+                LazyVGrid(columns: columns, spacing: 16) {
+                    ForEach(viewModel.visibleAquariumSensors) { sensor in
+                        tankCard(for: sensor)
+                    }
+                }
+            }
+        }
+    }
+
+    private var compactContent: some View {
+        CompactAquariumView(
+            sensors: viewModel.visibleAquariumSensors,
+            allReadings: viewModel.readings,
+            lastUpdated: viewModel.lastUpdated
+        )
     }
 
     private func tankCard(for sensor: AquaReading) -> some View {
