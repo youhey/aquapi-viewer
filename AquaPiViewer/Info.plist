@@ -31,5 +31,7 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>AquaPi から水槽センサー値と制御状態を取得するためにローカルネットワークへ接続します。</string>
 </dict>
 </plist>
