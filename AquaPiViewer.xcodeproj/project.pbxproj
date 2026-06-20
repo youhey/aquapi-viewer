@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		D860186F2FD5482700E0FD58 /* AquaPiViewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AquaPiViewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D860186F2FD5482700E0FD58 /* AquaPi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AquaPi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -54,7 +54,7 @@
 		D86018702FD5482700E0FD58 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				D860186F2FD5482700E0FD58 /* AquaPiViewer.app */,
+				D860186F2FD5482700E0FD58 /* AquaPi.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -81,7 +81,7 @@
 			packageProductDependencies = (
 			);
 			productName = AquaPiViewer;
-			productReference = D860186F2FD5482700E0FD58 /* AquaPiViewer.app */;
+			productReference = D860186F2FD5482700E0FD58 /* AquaPi.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -277,8 +277,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = youhey.AquaPiViewer;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = youhey.AquaPi;
+				PRODUCT_NAME = AquaPi;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -309,8 +309,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = youhey.AquaPiViewer;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = youhey.AquaPi;
+				PRODUCT_NAME = AquaPi;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
