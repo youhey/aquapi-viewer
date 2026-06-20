@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 enum AquaDisplayMode: String, CaseIterable, Identifiable {
     case normal
@@ -14,6 +15,15 @@ enum AquaDisplayMode: String, CaseIterable, Identifiable {
             "Normal"
         case .compact:
             "Compact"
+        }
+    }
+
+    var windowSize: CGSize {
+        switch self {
+        case .normal:
+            CGSize(width: 720, height: 886)
+        case .compact:
+            CGSize(width: 360, height: 474)
         }
     }
 }

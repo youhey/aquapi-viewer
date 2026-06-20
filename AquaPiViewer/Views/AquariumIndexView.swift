@@ -27,6 +27,7 @@ struct AquariumIndexView: View {
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .background(WindowTitleConfigurator(title: "AquaPi"))
+        .background(WindowSizeConfigurator(size: displayMode.windowSize))
         .frame(
             minWidth: displayMode == .compact ? 360 : 720,
             minHeight: displayMode == .compact ? 320 : 520
@@ -233,5 +234,46 @@ private struct WindowTitleConfigurator: NSViewRepresentable {
     private func configure(window: NSWindow?) {
         window?.title = title
         window?.titleVisibility = .hidden
+    }
+}
+
+private struct WindowSizeConfigurator: NSViewRepresentable {
+    let size: CGSize
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            configure(window: view.window)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            configure(window: nsView.window)
+        }
+    }
+
+    private func configure(window: NSWindow?) {
+        guard let window else {
+            return
+        }
+
+        let targetSize = NSSize(width: size.width, height: size.height)
+        let currentFrame = window.frame
+        let targetFrame = NSRect(
+            x: currentFrame.minX,
+            y: currentFrame.maxY - targetSize.height,
+            width: targetSize.width,
+            height: targetSize.height
+        )
+
+        window.minSize = targetSize
+        window.maxSize = targetSize
+
+        if abs(currentFrame.width - targetSize.width) > 0.5
+            || abs(currentFrame.height - targetSize.height) > 0.5 {
+            window.setFrame(targetFrame, display: true, animate: false)
+        }
     }
 }
