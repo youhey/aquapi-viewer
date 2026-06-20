@@ -5,8 +5,6 @@ struct CompactAquariumView: View {
     let allReadings: [AquaReading]
     let lastUpdated: Date?
 
-    @State private var contentWidth: CGFloat = 0
-
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             header
@@ -19,23 +17,25 @@ struct CompactAquariumView: View {
                 )
                 .frame(maxWidth: .infinity, minHeight: 160)
             } else {
-                LazyVGrid(columns: compactColumns(for: contentWidth), spacing: 8) {
-                    ForEach(Array(sensors.enumerated()), id: \.element.id) { index, sensor in
-                        CompactTankCardView(sensor: sensor, fallbackIndex: index + 1)
-                    }
-                }
-                .background {
-                    GeometryReader { proxy in
-                        Color.clear
-                            .preference(key: CompactWidthPreferenceKey.self, value: proxy.size.width)
-                    }
-                }
-                .onPreferenceChange(CompactWidthPreferenceKey.self) { width in
-                    contentWidth = width
+                ViewThatFits(in: .horizontal) {
+                    tankGrid(columns: twoColumns)
+                        .frame(minWidth: 520, maxWidth: .infinity, alignment: .leading)
+
+                    tankGrid(columns: oneColumn)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
 
             compactFooter
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func tankGrid(columns: [GridItem]) -> some View {
+        LazyVGrid(columns: columns, spacing: 8) {
+            ForEach(Array(sensors.enumerated()), id: \.element.id) { index, sensor in
+                CompactTankCardView(sensor: sensor, fallbackIndex: index + 1)
+            }
         }
     }
 
@@ -87,12 +87,12 @@ struct CompactAquariumView: View {
         return "Updated \(Self.timeFormatter.string(from: lastUpdated))"
     }
 
-    private func compactColumns(for width: CGFloat) -> [GridItem] {
-        if width < 520 {
-            return [GridItem(.flexible(), spacing: 8)]
-        }
+    private var oneColumn: [GridItem] {
+        [GridItem(.flexible(), spacing: 8)]
+    }
 
-        return [
+    private var twoColumns: [GridItem] {
+        [
             GridItem(.flexible(), spacing: 8),
             GridItem(.flexible(), spacing: 8)
         ]
@@ -104,14 +104,6 @@ struct CompactAquariumView: View {
         formatter.timeStyle = .short
         return formatter
     }()
-}
-
-private struct CompactWidthPreferenceKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
 }
 
 private struct CompactTankCardView: View {
