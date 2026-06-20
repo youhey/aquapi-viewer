@@ -2,13 +2,9 @@ import SwiftUI
 
 struct CompactAquariumView: View {
     let sensors: [AquaReading]
-    let allReadings: [AquaReading]
-    let lastUpdated: Date?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            header
-
             if sensors.isEmpty {
                 ContentUnavailableView(
                     "No tank data",
@@ -25,8 +21,6 @@ struct CompactAquariumView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-
-            compactFooter
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -39,54 +33,6 @@ struct CompactAquariumView: View {
         }
     }
 
-    private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text("AquaPi")
-                .font(.headline.weight(.semibold))
-                .foregroundStyle(.cyan)
-
-            Spacer()
-
-            Text(lastUpdatedText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-        }
-    }
-
-    private var compactFooter: some View {
-        HStack(spacing: 12) {
-            Text(roomText)
-            Text("Hum --%")
-            Text("Leak --")
-        }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .monospacedDigit()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 2)
-    }
-
-    private var roomText: String {
-        guard let temperature = roomTemperature else {
-            return "Room --.-°C"
-        }
-        return String(format: "Room %.1f°C", temperature)
-    }
-
-    private var roomTemperature: Double? {
-        allReadings.first { reading in
-            reading.role == "indoor" || reading.type == "air"
-        }?.temperatureC
-    }
-
-    private var lastUpdatedText: String {
-        guard let lastUpdated else {
-            return "Updated --:--"
-        }
-        return "Updated \(Self.timeFormatter.string(from: lastUpdated))"
-    }
-
     private var oneColumn: [GridItem] {
         [GridItem(.flexible(), spacing: 8)]
     }
@@ -97,13 +43,6 @@ struct CompactAquariumView: View {
             GridItem(.flexible(), spacing: 8)
         ]
     }
-
-    private static let timeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
-        return formatter
-    }()
 }
 
 private struct CompactTankCardView: View {
@@ -245,9 +184,7 @@ private struct CompactTankCardView: View {
                 fanMode: "auto",
                 fanReason: nil
             )
-        ],
-        allReadings: [],
-        lastUpdated: Date()
+        ]
     )
     .padding()
 }

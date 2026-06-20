@@ -154,9 +154,7 @@ struct AquariumIndexView: View {
 
     private var compactContent: some View {
         CompactAquariumView(
-            sensors: viewModel.visibleAquariumSensors,
-            allReadings: viewModel.readings,
-            lastUpdated: viewModel.lastUpdated
+            sensors: viewModel.visibleAquariumSensors
         )
     }
 
